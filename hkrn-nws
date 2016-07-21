@@ -1,22 +1,29 @@
 server {
   listen 80; # redundant in new nginx versions
-  server_name stuff.hikorean.news;
-  root /usr/share/phpmyadmin/;
-  index index.php index.html index.htm i;
+  server_name hikorean.news www.hikorean.news;
+  root /var/www/hkrn-nws/docroot/;
 
   # access_log off;
-  access_log  /var/log/nginx/stuff.log;
+  access_log  /var/log/nginx/hkrn-nws.log;
 
- location / 
-  {
-  try_files $uri $uri/ /index.php;
-        }
-        error_page 404 /404.html;
-        error_page 500 502 503 504 /50x.html;
-        location = /50x.html 
-  {
-       root /usr/share/phpmyadmin/;
-        }
+  location ~ \..*/.*\.php$ {
+    return 403;
+  }
+
+  # Block access to "hidden" files and directories whose names begin with a
+  # period. This includes directories used by version control systems such
+  # as Subversion or Git to store control files.
+  location ~ (^|/)\. {
+    return 403;
+  }
+
+  location / {
+    try_files $uri @rewrite;
+  }
+
+  location @rewrite {
+    rewrite ^ /index.php;
+  }
 
   location ~ \.php$ {
     set $no_cache "";
@@ -24,11 +31,7 @@ server {
       set $no_cache "1";
     }
 
-  location ~ (^|/)\. {
-    return 403;
-  }
-
-  if ($no_cache = "1") {
+    if ($no_cache = "1") {
       add_header Set-Cookie "_mcnc=1; Max-Age=2; Path=/";
       add_header X-Microcachable "0";
     }
